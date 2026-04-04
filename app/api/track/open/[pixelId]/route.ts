@@ -9,11 +9,12 @@ const TRANSPARENT_GIF = Buffer.from(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { pixelId: string } }
+  { params }: { params: Promise<{ pixelId: string }> }
 ) {
+  const { pixelId } = await params
   try {
     await prisma.emailSent.update({
-      where: { pixelId: params.pixelId },
+      where: { pixelId },
       data: { openedAt: new Date() },
     })
   } catch {
