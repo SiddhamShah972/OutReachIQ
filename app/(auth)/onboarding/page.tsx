@@ -318,7 +318,7 @@ export default function OnboardingPage() {
                   <p className="text-muted-foreground">
                     OutreachIQ is ready to help you land your dream job. Start by exploring available jobs.
                   </p>
-                  <Button className="w-full" size="lg" onClick={() => router.push('/')}>
+            <Button className="w-full" size="lg" onClick={() => router.push('/dashboard')}>
                     Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>
