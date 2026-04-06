@@ -4,7 +4,7 @@ test.describe('Web application workflow', () => {
   test('landing page shows auth entry points', async ({ page }) => {
     await page.goto('/')
 
-    await expect(page.getByRole('heading', { name: 'OutReachIQ' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /outreachiq/i })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/login')
     await expect(page.getByRole('link', { name: 'Register' })).toHaveAttribute('href', '/register')
   })
@@ -12,7 +12,7 @@ test.describe('Web application workflow', () => {
   test('login page renders Google sign in call-to-action', async ({ page }) => {
     await page.goto('/login')
 
-    await expect(page.getByRole('heading', { name: 'Welcome to OutreachIQ' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /welcome to outreachiq/i })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible()
   })
 
@@ -28,6 +28,6 @@ test.describe('Web application workflow', () => {
     await page.goto('/dashboard')
 
     await expect(page).toHaveURL(/\/login$/)
-    await expect(page.getByRole('heading', { name: 'Welcome to OutreachIQ' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /welcome to outreachiq/i })).toBeVisible()
   })
 })
