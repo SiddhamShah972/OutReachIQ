@@ -53,8 +53,8 @@ export async function GET(req: NextRequest) {
     ? replyDurationsInDays.reduce((sum, days) => sum + days, 0) / replyDurationsInDays.length
     : null
 
-  const avgResponseTime = replyDurationsInDays.length > 0
-    ? `${avgResponseDays?.toFixed(1)} days`
+  const avgResponseTime = avgResponseDays !== null
+    ? `${avgResponseDays.toFixed(1)} days`
     : 'N/A'
 
   const statusBreakdown = jobStats.map((job) => ({
