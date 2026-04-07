@@ -57,11 +57,15 @@ export async function GET(req: NextRequest) {
     value: job._count,
   }))
 
-  const subjectPerformance = recentEmails.map((email) => ({
-    subject: email.subject || '(No subject)',
-    opens: email.openedAt ? 1 : 0,
-    replies: email.repliedAt ? 1 : 0,
-  }))
+  const subjectPerformanceMap = new Map<string, { subject: string; opens: number; replies: number }>()
+  for (const email of recentEmails) {
+    const subject = email.subject || '(No subject)'
+    const current = subjectPerformanceMap.get(subject) ?? { subject, opens: 0, replies: 0 }
+    current.opens += email.openedAt ? 1 : 0
+    current.replies += email.repliedAt ? 1 : 0
+    subjectPerformanceMap.set(subject, current)
+  }
+  const subjectPerformance = Array.from(subjectPerformanceMap.values())
 
   const metrics = {
     totalEmails,
@@ -98,7 +102,7 @@ export async function GET(req: NextRequest) {
   } catch {
     return NextResponse.json({
       summary: 'Your outreach metrics are ready. Keep consistency and iterate on messaging quality.',
-      recommendations: ['Personalize subject lines and follow up with non-responders within 3-5 days.'],
+      recommendations: ['Personalize subject lines and follow up with non-responders within 3-5 days to maintain momentum.'],
       emailStats: {
         total: totalEmails,
         openRate,
