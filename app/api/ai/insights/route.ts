@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  const totalEmails = emailStats._count.id ?? 0
+  const totalEmails = emailStats._count?.id ?? 0
   const openedCount = recentEmails.filter((email) => email.openedAt).length
   const repliedCount = recentEmails.filter((email) => email.repliedAt).length
 
@@ -43,13 +43,18 @@ export async function GET(req: NextRequest) {
   const replyDurationsInDays = recentEmails
     .filter((email) => email.repliedAt)
     .map((email) => {
-      const repliedAt = email.repliedAt as Date
+      const repliedAt = email.repliedAt
+      if (!(repliedAt instanceof Date)) return -1
       return (repliedAt.getTime() - email.sentAt.getTime()) / (1000 * 60 * 60 * 24)
     })
     .filter((days) => days >= 0)
 
+  const avgResponseDays = replyDurationsInDays.length > 0
+    ? replyDurationsInDays.reduce((sum, days) => sum + days, 0) / replyDurationsInDays.length
+    : null
+
   const avgResponseTime = replyDurationsInDays.length > 0
-    ? `${(replyDurationsInDays.reduce((sum, days) => sum + days, 0) / replyDurationsInDays.length).toFixed(1)} days`
+    ? `${avgResponseDays?.toFixed(1)} days`
     : 'N/A'
 
   const statusBreakdown = jobStats.map((job) => ({
