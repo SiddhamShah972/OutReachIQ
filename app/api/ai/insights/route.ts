@@ -3,6 +3,12 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { generateJSON, PROMPTS } from '@/lib/anthropic'
 
+interface AIInsightPayload {
+  summary?: string
+  insights?: Array<{ title?: string; description?: string; action?: string }>
+  weeklyGoals?: string[]
+}
+
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) {
@@ -27,8 +33,38 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
+  const totalEmails = emailStats._count.id ?? 0
+  const openedCount = recentEmails.filter((email) => email.openedAt).length
+  const repliedCount = recentEmails.filter((email) => email.repliedAt).length
+
+  const openRate = totalEmails > 0 ? Math.round((openedCount / totalEmails) * 100) : 0
+  const replyRate = totalEmails > 0 ? Math.round((repliedCount / totalEmails) * 100) : 0
+
+  const replyDurationsInDays = recentEmails
+    .filter((email) => email.repliedAt)
+    .map((email) => {
+      const repliedAt = email.repliedAt as Date
+      return (repliedAt.getTime() - email.sentAt.getTime()) / (1000 * 60 * 60 * 24)
+    })
+    .filter((days) => days >= 0)
+
+  const avgResponseTime = replyDurationsInDays.length > 0
+    ? `${(replyDurationsInDays.reduce((sum, days) => sum + days, 0) / replyDurationsInDays.length).toFixed(1)} days`
+    : 'N/A'
+
+  const statusBreakdown = jobStats.map((job) => ({
+    name: job.status,
+    value: job._count,
+  }))
+
+  const subjectPerformance = recentEmails.map((email) => ({
+    subject: email.subject || '(No subject)',
+    opens: email.openedAt ? 1 : 0,
+    replies: email.repliedAt ? 1 : 0,
+  }))
+
   const metrics = {
-    totalEmails: emailStats._count.id,
+    totalEmails,
     jobsByStatus: jobStats,
   }
 
@@ -36,8 +72,41 @@ export async function GET(req: NextRequest) {
     const insights = await generateJSON(
       PROMPTS.insightEngine(metrics, JSON.stringify(recentEmails))
     )
-    return NextResponse.json({ insights, metrics })
+    const parsedInsights = insights as AIInsightPayload
+
+    const recommendations = [
+      ...(parsedInsights.weeklyGoals ?? []),
+      ...((parsedInsights.insights ?? [])
+        .map((insight) => insight.action)
+        .filter((action): action is string => Boolean(action))),
+    ]
+
+    return NextResponse.json({
+      summary: parsedInsights.summary ?? 'No AI summary available yet.',
+      recommendations: recommendations.length > 0
+        ? recommendations
+        : ['Keep sending consistent, personalized outreach and follow-ups.'],
+      emailStats: {
+        total: totalEmails,
+        openRate,
+        replyRate,
+        avgResponseTime,
+      },
+      subjectPerformance,
+      statusBreakdown,
+    })
   } catch {
-    return NextResponse.json({ insights: null, metrics })
+    return NextResponse.json({
+      summary: 'Your outreach metrics are ready. Keep consistency and iterate on messaging quality.',
+      recommendations: ['Personalize subject lines and follow up with non-responders within 3-5 days.'],
+      emailStats: {
+        total: totalEmails,
+        openRate,
+        replyRate,
+        avgResponseTime,
+      },
+      subjectPerformance,
+      statusBreakdown,
+    })
   }
 }
