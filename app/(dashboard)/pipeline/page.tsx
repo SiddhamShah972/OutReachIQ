@@ -57,7 +57,13 @@ export default function PipelinePage() {
 
   useEffect(() => {
     fetch('/api/jobs')
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) throw new Error('Failed to fetch jobs')
+        const data = await r.json()
+        if (Array.isArray(data)) return data
+        if (Array.isArray(data?.jobs)) return data.jobs
+        return []
+      })
       .then(setJobs)
       .catch(() => toast({ title: 'Error loading jobs', variant: 'destructive' }))
       .finally(() => setLoading(false))
