@@ -58,11 +58,13 @@ export default function PipelinePage() {
   useEffect(() => {
     fetch('/api/jobs')
       .then(async (r) => {
-        if (!r.ok) throw new Error('Failed to fetch jobs')
+        if (!r.ok) throw new Error(`Failed to fetch jobs (${r.status} ${r.statusText}). Please try again.`)
         const data = await r.json()
+        if (data == null) throw new Error('Jobs response is null or undefined')
         if (Array.isArray(data)) return data
-        if (Array.isArray(data?.jobs)) return data.jobs
-        return []
+        const maybeJobs = typeof data === 'object' ? (data as { jobs?: unknown }).jobs : undefined
+        if (Array.isArray(maybeJobs)) return maybeJobs as Job[]
+        throw new Error('Unexpected jobs response shape')
       })
       .then(setJobs)
       .catch(() => toast({ title: 'Error loading jobs', variant: 'destructive' }))
