@@ -49,8 +49,13 @@ export default function JobsPage() {
       if (statusFilter !== 'all') params.set('status', statusFilter)
       const res = await fetch(`/api/jobs?${params}`)
       if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      setJobs(data)
+      const data: unknown = await res.json()
+      const normalizedJobs = Array.isArray(data)
+        ? data
+        : (data && typeof data === 'object' && Array.isArray((data as { jobs?: unknown }).jobs))
+          ? (data as { jobs: Job[] }).jobs
+          : []
+      setJobs(normalizedJobs)
     } catch {
       toast({ title: 'Error', description: 'Failed to load jobs', variant: 'destructive' })
     } finally {
